@@ -35,7 +35,7 @@ def get_organizations():
 
 
 def get_dashboard(organization):
-    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
+    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].iloc[0]
 
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     patient_ids = filtered_encounters["PATIENT"].unique()
@@ -73,7 +73,7 @@ def get_dashboard(organization):
 
 def get_patient_demographics(organization, age_filter=None, gender_filter=None, condition_filter=None):
     # print(age_filter, gender_filter, condition_filter)
-    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
+    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].iloc[0]
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     patient_ids = filtered_encounters["PATIENT"].unique()
     filtered_patients = patients_df[patients_df["Id"].isin(patient_ids)]
@@ -123,7 +123,7 @@ def get_patient_demographics(organization, age_filter=None, gender_filter=None, 
     }
 
 def get_treatments(organization,  time_filter=None, medication_filter=None):
-    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
+    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].iloc[0]
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     encounter_ids = filtered_encounters["Id"].unique()
     filtered_medications = medications_df[medications_df["ENCOUNTER"].isin(encounter_ids)]
@@ -162,9 +162,9 @@ def get_treatments(organization,  time_filter=None, medication_filter=None):
 
 def get_trends(organization, region_filter=None, time_filter=None):
     # print("here", region_filter, time_filter)
-    # print("(", organization.replace(" ", "."), ")")
-    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
-    # print("==================", organization_id)
+    print("(", organization.replace(" ", "."), ")")
+    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].iloc[0]
+    print("==================", organization_id)
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     patient_ids = filtered_encounters["PATIENT"].unique()
     filtered_patients = patients_df[patients_df["Id"].isin(patient_ids)]
