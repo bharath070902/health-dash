@@ -12,6 +12,8 @@ patients_df["BIRTHDATE"] = pd.to_datetime(patients_df["BIRTHDATE"], errors="coer
 patients_df["AGE"] = pd.to_datetime('today').year - patients_df['BIRTHDATE'].dt.year
 encounters_df["START"] = pd.to_datetime(encounters_df["START"], errors="coerce")
 medications_df["START"] = pd.to_datetime(medications_df["START"], errors="coerce").dt.tz_localize(None)
+organizations_df["NAME"] = organizations_df["NAME"].str.replace(r"\s+", " ", regex=True)
+
 
 
 def format_time_ago(td):
@@ -70,7 +72,7 @@ def get_dashboard(organization):
     }
 
 def get_patient_demographics(organization, age_filter=None, gender_filter=None, condition_filter=None):
-    print(age_filter, gender_filter, condition_filter)
+    # print(age_filter, gender_filter, condition_filter)
     organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     patient_ids = filtered_encounters["PATIENT"].unique()
@@ -159,15 +161,17 @@ def get_treatments(organization,  time_filter=None, medication_filter=None):
     }
 
 def get_trends(organization, region_filter=None, time_filter=None):
-    print("here", region_filter, time_filter)
+    # print("here", region_filter, time_filter)
+    # print("(", organization.replace(" ", "."), ")")
     organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].squeeze()
+    # print("==================", organization_id)
     filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
     patient_ids = filtered_encounters["PATIENT"].unique()
     filtered_patients = patients_df[patients_df["Id"].isin(patient_ids)]
     filtered_encounters = filtered_encounters.merge(filtered_patients[["Id", "STATE"]], left_on="PATIENT", right_on="Id", how="left").rename(columns={"Id_x": "Encounter_ID", "Id_y": "Patient_ID"})
     filtered_encounters["START"] = filtered_encounters["START"].dt.tz_localize(None)
 
-    print(filtered_encounters.head(10))
+    # print(filtered_encounters.head(10))
 
     deceased_patients = filtered_patients[filtered_patients["DEATHDATE"].notna()]["Id"].unique()
     chronic_conditions = conditions_df[conditions_df["PATIENT"].isin(deceased_patients)]
@@ -189,7 +193,7 @@ def get_trends(organization, region_filter=None, time_filter=None):
     encounter_ids = filtered_encounters["Encounter_ID"].unique()
     filtered_immunizations = immunizations_df[immunizations_df["ENCOUNTER"].isin(encounter_ids)]
 
-    print(filtered_immunizations.head(5))
+    # print(filtered_immunizations.head(5))
 
     immunization_distribution = (
         filtered_immunizations.merge(filtered_encounters[["Encounter_ID", "STATE"]], left_on="ENCOUNTER", right_on="Encounter_ID", how="left")
@@ -214,4 +218,4 @@ def get_trends(organization, region_filter=None, time_filter=None):
 organization_id = "HOLLYWOOD CROSS MEDICAL CLINIC"
 # dashboard_data = get_dashboard(organization_id)
 # print(dashboard_data)
-print(get_trends(organization_id))
+# print(get_trends(organization_id))

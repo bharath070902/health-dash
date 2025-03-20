@@ -21,6 +21,8 @@ def home():
             password = request.form.get("password")
             organization = request.form.get("organization")
 
+            # print(organization, type(organization))
+
             session["is_authenticated"] = True
             session["user"] = {"name": username, "organization": organization}
             return redirect("/")
@@ -68,7 +70,7 @@ def trends():
 
     public_health_data = get_trends(user.get("organization", ""), region_filter, time_filter)
 
-    print(public_health_data)
+    # print(public_health_data)
     return jsonify(public_health_data)
 
 if __name__ == "__main__":
