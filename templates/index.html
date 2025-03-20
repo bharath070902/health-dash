@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>HealthDash</title>
+        <link rel="stylesheet" href="static/index.css" />
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+        <style>
+            body {
+                background-color: #f8f9fa;
+            }
+            .navbar {
+                background-color: #ffffff;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .nav-link {
+                color: #6c757d;
+                cursor: pointer;
+            }
+            .nav-link.active {
+                color: #0d6efd;
+                font-weight: 600;
+            }
+            .greeting-banner {
+                background: url('https://img.freepik.com/free-photo/abstract-smooth-dark-blue-with-black-vignette-studio-well-use-as-backgroundbusiness-reportdigitalwebsite-templatebackdrop_1258-108839.jpg?t=st=1742456373~exp=1742459973~hmac=eab82c8c5e6165bd78f3976a32d7ca59717e10a71cff73be4a1bd1d47476da45&w=2000') no-repeat center center;
+                background-size: cover;
+                height: 200px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                color: white;
+                text-align: center;
+                border-radius: 15px;
+            }
+
+            .greeting-overlay {
+                background: rgba(0, 0, 0, 0.5);
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 15px;
+            }
+
+            #greeting-text {
+                font-size: 40px;
+                font-weight: bold;
+
+            }
+            .col-md-3, .col-md-4, .col-md-6 {
+                display: grid;
+            }
+            .card {
+                border-radius: 10px;
+                display: flex;
+                justify-content: space-between;
+            }
+            .activity-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .recent-activity {
+                background: #fff;
+                border-radius: 10px;
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="static/index.js"></script>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm p-3">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="#">
+                    <img src="https://img.icons8.com/ios-filled/50/4a90e2/hospital.png" alt="Logo" width="30" height="30" class="me-2">
+                    <strong>HealthDash</strong>
+                </a>
+        
+                {% if is_authenticated %}
+                <div class="d-flex align-items-center ms-auto">
+                    <div class="d-flex align-items-center me-3">
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
+                            <i class="fa fa-user text-secondary"></i>
+                        </div>
+                        <span class="ms-2 fw-semibold">Dr. {{ user }}</span>
+                    </div>
+        
+                    <form method="POST" action="/" class="m-0">
+                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">Logout</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </nav>
+        {% if is_authenticated %}
+        <div class="container mt-3">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <div class="nav-link active">Dashboard</div>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">Demographics</div>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">Treatments & Medications</div>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">Public Health Trends</div>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+        {% if not is_authenticated %}
+        <div class="container d-flex justify-content-center align-items-center vh-100">
+            <div class="card p-4 shadow-sm" style="width: 350px;">
+                <h3 class="text-center mb-3">Login to HealthDash</h3>
+                <form method="POST" action="/">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Enter username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="Enter password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="organization" class="form-label">Select Organization</label>
+                        <select id="organization" name="organization" class="form-select" required>
+                            {% for organization in organizations %}
+                            <option>{{ organization }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>        
+        {% endif %}
+        {% if is_authenticated %}
+        <div id="dashboard" class="container mt-4">
+            <div class="greeting-banner">
+                <div class="greeting-overlay">
+                    <h1 id="greeting-text">Welcome Back, Dr. {{ user }}!</h1>
+                </div>
+            </div>
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card p-3">
+                            <h6>Total Patients</h6>
+                            <h2 id="total-patients"></h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3">
+                            <h6>Most Common Condition</h6>
+                            <h4><strong id="most-common-condition"></strong></h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3">
+                            <h6>Average Age</h6>
+                            <h2 id="average-age"></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3"> 
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h6>Total Encounters</h6>
+                        <h2 id="total-encounters"></h2>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h6>Most Prescribed Medication</h6>
+                        <h4><strong id="most-prescribed-medication"></strong></h4>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="container mt-4">
+                <div class="recent-activity">
+                    <h5>Recent Activity</h5>
+                    <ul class="list-unstyled">
+                        <li class="d-flex align-items-center mb-3">
+                            <div class="activity-icon bg-primary text-white me-3">
+                                <i class="fa fa-user-plus"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0"><strong id="latest-patient"></strong></p>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-center mb-3">
+                            <div class="activity-icon bg-success text-white me-3">
+                                <i class="fa fa-notes-medical"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0"><strong id="latest-encounter"></strong></p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div> -->
+        </div>
+        <div id="demographics" class="container mt-4" style="display: none;">
+            <h2 class="mb-2">Patient Demographics</h2>
+            <p class="text-muted">Analyze patient distribution and apply filters for detailed insights</p>
+        
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Age Range</label>
+                    <select class="form-select" id="ageFilter">
+                        <option selected>All Ages</option>
+                        <option value="0-18">0-18</option>
+                        <option value="19-35">19-35</option>
+                        <option value="36-50">36-50</option>
+                        <option value="51+">51+</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Gender</label>
+                    <select class="form-select" id="genderFilter">
+                        <option selected>All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Condition</label>
+                    <select class="form-select" id="conditionFilter">
+                        <option selected>Loading...</option>
+                    </select>
+                </div>
+            </div>
+        
+            <div class="row g-3 justify-content-around">
+                <div class="col-md-5">
+                    <div class="card p-3">
+                        <h5>Age Distribution</h5>
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="card p-3">
+                        <h5>Gender Distribution</h5>
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="treatments" class="container mt-4" style="display: none;">
+            <h2 class="mb-2">Treatment & Medication Statistics</h2>
+        
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Medication Name</label>
+                    <select class="form-select" id="medication-filter">
+                        <option selected>All Medications</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Time Period</label>
+                    <select class="form-select" id="time-filter">
+                        <option selected>All Time</option>
+                        <option>Last 30 Days</option>
+                        <option>Last 6 Months</option>
+                        <option>Last Year</option>
+                    </select>
+                </div>
+            </div>
+        
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="card p-3 text-center">
+                                <h6>Total Prescriptions</h6>
+                                <h2 id="total-prescriptions"></h2>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card p-3 text-center">
+                                <h6>Active Treatments</h6>
+                                <h2 id="active-treatments"></h2>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card p-3 text-center">
+                                <h6>Unique Medications</h6>
+                                <h2 id="unique-medications"></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="col-md-6">
+                    <div class="card p-3 text-center">
+                        <h5>Most Prescribed Medications</h5>
+                        <canvas id="medications-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="trends" class="container mt-4" style="display: none;">
+            <h2 class="mb-2">Public Health Trends</h2>
+            <p class="text-muted">Track vaccination rates and chronic conditions across regions</p>
+        
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Region</label>
+                    <select class="form-select" id="regions-filter">
+                        <option selected>All Regions</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Time Period</label>
+                    <select class="form-select" id="trends-time-filter">
+                        <option selected>All Time</option>
+                        <option>Last 12 Months</option>
+                        <option>Last 6 Months</option>
+                        <option>Last 3 Months</option>
+                    </select>
+                </div>
+            </div>
+        
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card p-3 text-center">
+                        <h5>Vaccination Rates</h5>
+                        <canvas id="vaccination-chart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 text-center">
+                        <h5>Chronic Conditions</h5>
+                        <canvas id="conditions-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- <div class="card p-3 mt-4">
+                <h5>Regional Health Data</h5>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Region</th>
+                            <th>Vaccination Rate</th>
+                            <th>Cases</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>California</td>
+                            <td>78.5%</td>
+                            <td>1,234</td>
+                        </tr>
+                        <tr>
+                            <td>Texas</td>
+                            <td>65.2%</td>
+                            <td>2,156</td>
+                        </tr>
+                        <tr>
+                            <td>New York</td>
+                            <td>82.1%</td>
+                            <td>987</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div> -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const vacCtx = document.getElementById('vaccinationChart').getContext('2d');
+                new Chart(vacCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['California', 'Texas', 'New York'],
+                        datasets: [{
+                            label: 'Vaccination Rate (%)',
+                            data: [78.5, 65.2, 82.1],
+                            backgroundColor: ['#4a90e2', '#50e3c2', '#f5a623']
+                        }]
+                    },
+                    options: {
+                        responsive: true
+                    }
+                });
+        
+                const condCtx = document.getElementById('conditionsChart').getContext('2d');
+                new Chart(condCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [{
+                            label: 'Chronic Condition Cases',
+                            data: [200, 220, 250, 270, 300, 320, 350, 370, 400, 420, 450, 480],
+                            borderColor: '#f5a623',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true
+                    }
+                });
+            });
+        </script> 
+        </div> 
+        {% endif %}
+    </body>
+</html>
