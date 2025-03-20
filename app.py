@@ -7,10 +7,10 @@ app = Flask(__name__)
 app.secret_key = "secret_key"
 CORS(app)
 
-user = {
-    "name": "Dr. Sarah Williamson",
-    'organization': "HOLLYWOOD CROSS MEDICAL CLINIC"
-}
+# user = {
+#     "name": "Dr. Sarah Williamson",
+#     'organization': "HOLLYWOOD CROSS MEDICAL CLINIC"
+# }
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -36,38 +36,40 @@ def home():
 
 @app.route("/api/dashboard")
 def dashboard():
-    data = get_dashboard(user["organization"])
+    user = session.get("user", {})
+    data = get_dashboard(user.get("organization", ""))
 
     return jsonify(data)
 
 @app.route("/api/demographics")
 def demographics():
+    user = session.get("user", {})
     age_filter = request.args.get("age")
     gender_filter = request.args.get("gender")
     condition_filter = request.args.get("condition")
 
-    data = get_patient_demographics(user["organization"], age_filter, gender_filter, condition_filter)
-    print(data);
+    data = get_patient_demographics(user.get("organization", ""), age_filter, gender_filter, condition_filter)
     return jsonify(data)
 
 @app.route("/api/treatments")
 def treatments():
+    user = session.get("user", {})
     time_filter = request.args.get("time")
     medication_filter = request.args.get("medication")
     
-    treatments_data = get_treatments(user["organization"], time_filter, medication_filter)
+    treatments_data = get_treatments(user.get("organization", ""), time_filter, medication_filter)
     return jsonify(treatments_data)
 
 @app.route("/api/trends")
 def trends():
+    user = session.get("user", {})
     region_filter = request.args.get("region")
     time_filter = request.args.get("time")
-    # condition_filter = request.args.get("condition")
 
-    public_health_data = get_trends(user["organization"], region_filter, time_filter)
+    public_health_data = get_trends(user.get("organization", ""), region_filter, time_filter)
 
     print(public_health_data)
     return jsonify(public_health_data)
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=3000)
