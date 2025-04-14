@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify, request, redirect, session
 from flask_cors import CORS
 
-from data import get_organizations, get_dashboard, get_patient_demographics, get_treatments, get_trends
+from data import get_organizations, get_dashboard, get_patient_demographics, get_treatments, get_trends, predict_readmission_risk
 
 app = Flask(__name__)
 app.secret_key = "secret_key"
@@ -29,7 +29,7 @@ def home():
         else:
             session["is_authenticated"] = False
             return redirect("/")
-    
+
     is_authenticated = session.get("is_authenticated", False)
     user = session.get("user", {})
     organizations = get_organizations()
@@ -58,7 +58,7 @@ def treatments():
     user = session.get("user", {})
     time_filter = request.args.get("time")
     medication_filter = request.args.get("medication")
-    
+
     treatments_data = get_treatments(user.get("organization", ""), time_filter, medication_filter)
     return jsonify(treatments_data)
 
@@ -73,5 +73,13 @@ def trends():
     # print(public_health_data)
     return jsonify(public_health_data)
 
+@app.route("/api/predictions")
+def predictions():
+    user = session.get("user", {})
+    time_filter = request.args.get("time")
+
+    prediction_data = predict_readmission_risk(user.get("organization", ""), time_filter=time_filter)
+    return jsonify(prediction_data)
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=3000)
+    app.run(debug=True, host="0.0.0.0", port=5000)

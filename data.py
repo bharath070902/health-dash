@@ -41,9 +41,9 @@ def get_dashboard(organization):
     patient_ids = filtered_encounters["PATIENT"].unique()
     filtered_patients = patients_df[patients_df["Id"].isin(patient_ids)]
     total_encounters = filtered_encounters.shape[0]
-    
+
     total_patients = len(patient_ids)
-    
+
     filtered_conditions = conditions_df[conditions_df["PATIENT"].isin(patient_ids)]
     disorder_conditions = filtered_conditions[filtered_conditions["DESCRIPTION"].str.endswith("(disorder)", na=False)]
 
@@ -105,7 +105,7 @@ def get_patient_demographics(organization, age_filter=None, gender_filter=None, 
 
     gender_distribution = filtered_patients["GENDER"].value_counts().to_dict()
 
-    age_groups = pd.cut(filtered_patients["AGE"], bins=[0, 18, 35, 50, 65, 100], 
+    age_groups = pd.cut(filtered_patients["AGE"], bins=[0, 18, 35, 50, 65, 100],
                         labels=["0-18", "19-35", "36-50", "51-65", "65+"], include_lowest=True)
     age_distribution = age_groups.value_counts().to_dict()
 
@@ -177,7 +177,7 @@ def get_trends(organization, region_filter=None, time_filter=None):
     chronic_conditions = conditions_df[conditions_df["PATIENT"].isin(deceased_patients)]
     chronic_conditions["START"] = pd.to_datetime(chronic_conditions["START"], errors="coerce")
     chronic_conditions["START"] = chronic_conditions["START"].dt.tz_localize(None)
-    
+
     if region_filter and region_filter != "All Regions":
         filtered_encounters = filtered_encounters[filtered_encounters["STATE"] == region_filter]
 
@@ -189,7 +189,7 @@ def get_trends(organization, region_filter=None, time_filter=None):
         }
         filtered_encounters = filtered_encounters[filtered_encounters["START"] >= date_ranges[time_filter]]
         chronic_conditions = chronic_conditions[chronic_conditions["START"] >= date_ranges[time_filter]]
-    
+
     encounter_ids = filtered_encounters["Encounter_ID"].unique()
     filtered_immunizations = immunizations_df[immunizations_df["ENCOUNTER"].isin(encounter_ids)]
 
@@ -212,6 +212,143 @@ def get_trends(organization, region_filter=None, time_filter=None):
     return {
         "immunization_distribution": immunization_distribution,
         "top_chronic_conditions": top_chronic_conditions
+    }
+
+
+def predict_readmission_risk(organization, patient_filter=None, time_filter=None):
+    """
+    Predicts the risk of patient readmission based on historical data.
+    Returns risk scores and contributing factors.
+    """
+    organization_id = organizations_df.loc[organizations_df["NAME"] == organization, "Id"].iloc[0]
+    filtered_encounters = encounters_df[encounters_df["ORGANIZATION"] == organization_id]
+
+    # Get unique patients with their encounter data
+    patient_ids = filtered_encounters["PATIENT"].unique()
+    patient_encounters = {}
+
+    # Apply time filter if provided
+    if time_filter and time_filter != "All Time":
+        date_ranges = {
+            "Last 30 Days": pd.Timestamp.today() - pd.Timedelta(days=30),
+            "Last 6 Months": pd.Timestamp.today() - pd.DateOffset(months=6),
+            "Last Year": pd.Timestamp.today() - pd.DateOffset(years=1)
+        }
+        filtered_encounters = filtered_encounters[filtered_encounters["START"] >= date_ranges[time_filter]]
+
+    # Count encounters per patient to identify frequent visitors
+    for patient_id in patient_ids:
+        patient_encounters[patient_id] = filtered_encounters[filtered_encounters["PATIENT"] == patient_id].shape[0]
+
+    # Get patient demographics and conditions
+    filtered_patients = patients_df[patients_df["Id"].isin(patient_ids)]
+    filtered_conditions = conditions_df[conditions_df["PATIENT"].isin(patient_ids)]
+    filtered_medications = medications_df[medications_df["PATIENT"].isin(patient_ids)]
+
+    # Calculate readmission risk factors
+    risk_factors = {}
+    high_risk_patients = []
+    medium_risk_patients = []
+    low_risk_patients = []
+
+    for patient_id, encounter_count in patient_encounters.items():
+        # Get patient age
+        patient_age = filtered_patients.loc[filtered_patients["Id"] == patient_id, "AGE"].iloc[0]
+
+        # Get patient conditions
+        patient_conditions = filtered_conditions[filtered_conditions["PATIENT"] == patient_id]["DESCRIPTION"].tolist()
+        chronic_condition_count = sum(1 for condition in patient_conditions if "disorder" in condition.lower())
+
+        # Get patient medications
+        patient_medications = filtered_medications[filtered_medications["PATIENT"] == patient_id]["DESCRIPTION"].nunique()
+
+        # Calculate risk score (simplified algorithm)
+        risk_score = 0
+        risk_factors[patient_id] = []
+
+        # Factor 1: Frequent visits
+        if encounter_count >= 5:
+            risk_score += 30
+            risk_factors[patient_id].append("Frequent hospital visits")
+        elif encounter_count >= 3:
+            risk_score += 15
+            risk_factors[patient_id].append("Multiple hospital visits")
+
+        # Factor 2: Age risk
+        if patient_age >= 65:
+            risk_score += 25
+            risk_factors[patient_id].append("Elderly patient")
+        elif patient_age <= 10:
+            risk_score += 15
+            risk_factors[patient_id].append("Young patient")
+
+        # Factor 3: Chronic conditions
+        if chronic_condition_count >= 3:
+            risk_score += 25
+            risk_factors[patient_id].append("Multiple chronic conditions")
+        elif chronic_condition_count >= 1:
+            risk_score += 10
+            risk_factors[patient_id].append("Has chronic condition")
+
+        # Factor 4: Multiple medications
+        if patient_medications >= 5:
+            risk_score += 20
+            risk_factors[patient_id].append("Complex medication regimen")
+        elif patient_medications >= 3:
+            risk_score += 10
+            risk_factors[patient_id].append("Multiple medications")
+
+        # Categorize patients by risk
+        patient_name = filtered_patients.loc[filtered_patients["Id"] == patient_id, "FIRST"].iloc[0] + " " + \
+                      filtered_patients.loc[filtered_patients["Id"] == patient_id, "LAST"].iloc[0]
+
+        patient_data = {
+            "id": patient_id,
+            "name": patient_name,
+            "age": int(patient_age),
+            "risk_score": risk_score,
+            "risk_factors": risk_factors[patient_id]
+        }
+
+        if risk_score >= 60:
+            high_risk_patients.append(patient_data)
+        elif risk_score >= 30:
+            medium_risk_patients.append(patient_data)
+        else:
+            low_risk_patients.append(patient_data)
+
+    # Sort patients by risk score
+    high_risk_patients = sorted(high_risk_patients, key=lambda x: x["risk_score"], reverse=True)[:10]
+    medium_risk_patients = sorted(medium_risk_patients, key=lambda x: x["risk_score"], reverse=True)[:10]
+    low_risk_patients = sorted(low_risk_patients, key=lambda x: x["risk_score"], reverse=True)[:10]
+
+    # Calculate overall statistics
+    total_patients = len(patient_ids)
+    high_risk_percentage = round(len(high_risk_patients) / total_patients * 100, 1) if total_patients > 0 else 0
+    medium_risk_percentage = round(len(medium_risk_patients) / total_patients * 100, 1) if total_patients > 0 else 0
+    low_risk_percentage = round(len(low_risk_patients) / total_patients * 100, 1) if total_patients > 0 else 0
+
+    # Identify most common risk factors
+    all_factors = [factor for patient_id in risk_factors for factor in risk_factors[patient_id]]
+    factor_counts = {}
+    for factor in all_factors:
+        if factor in factor_counts:
+            factor_counts[factor] += 1
+        else:
+            factor_counts[factor] = 1
+
+    top_risk_factors = dict(sorted(factor_counts.items(), key=lambda item: item[1], reverse=True)[:5])
+
+    return {
+        "high_risk_patients": high_risk_patients,
+        "medium_risk_patients": medium_risk_patients,
+        "low_risk_patients": low_risk_patients,
+        "risk_distribution": {
+            "high_risk": high_risk_percentage,
+            "medium_risk": medium_risk_percentage,
+            "low_risk": low_risk_percentage
+        },
+        "top_risk_factors": top_risk_factors
     }
 
 

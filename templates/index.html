@@ -85,7 +85,7 @@
                     <img src="https://img.icons8.com/ios-filled/50/4a90e2/hospital.png" alt="Logo" width="30" height="30" class="me-2">
                     <strong>HealthDash</strong>
                 </a>
-        
+
                 {% if is_authenticated %}
                 <div class="d-flex align-items-center ms-auto">
                     <div class="d-flex align-items-center me-3">
@@ -94,7 +94,7 @@
                         </div>
                         <span class="ms-2 fw-semibold">Dr. {{ user }}</span>
                     </div>
-        
+
                     <form method="POST" action="/" class="m-0">
                         <button type="submit" class="btn btn-outline-danger btn-sm px-3">Logout</button>
                     </form>
@@ -116,6 +116,9 @@
                 </li>
                 <li class="nav-item">
                     <div class="nav-link">Public Health Trends</div>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">Readmission Predictions</div>
                 </li>
             </ul>
         </div>
@@ -144,7 +147,7 @@
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
             </div>
-        </div>        
+        </div>
         {% endif %}
         {% if is_authenticated %}
         <div id="dashboard" class="container mt-4">
@@ -175,7 +178,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row mt-3"> 
+            <div class="row mt-3">
                 <div class="col-md-6">
                     <div class="card p-3">
                         <h6>Total Encounters</h6>
@@ -216,7 +219,7 @@
         <div id="demographics" class="container mt-4" style="display: none;">
             <h2 class="mb-2">Patient Demographics</h2>
             <p class="text-muted">Analyze patient distribution and apply filters for detailed insights</p>
-        
+
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label">Age Range</label>
@@ -243,7 +246,7 @@
                     </select>
                 </div>
             </div>
-        
+
             <div class="row g-3 justify-content-around">
                 <div class="col-md-5">
                     <div class="card p-3">
@@ -261,7 +264,7 @@
         </div>
         <div id="treatments" class="container mt-4" style="display: none;">
             <h2 class="mb-2">Treatment & Medication Statistics</h2>
-        
+
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label">Medication Name</label>
@@ -279,7 +282,7 @@
                     </select>
                 </div>
             </div>
-        
+
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="row g-3">
@@ -303,7 +306,7 @@
                         </div>
                     </div>
                 </div>
-        
+
                 <div class="col-md-6">
                     <div class="card p-3 text-center">
                         <h5>Most Prescribed Medications</h5>
@@ -315,7 +318,7 @@
         <div id="trends" class="container mt-4" style="display: none;">
             <h2 class="mb-2">Public Health Trends</h2>
             <p class="text-muted">Track vaccination rates and chronic conditions across regions</p>
-        
+
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label">Region</label>
@@ -333,7 +336,7 @@
                     </select>
                 </div>
             </div>
-        
+
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="card p-3 text-center">
@@ -348,7 +351,7 @@
                     </div>
                 </div>
             </div>
-        
+
             <!-- <div class="card p-3 mt-4">
                 <h5>Regional Health Data</h5>
                 <table class="table">
@@ -379,6 +382,80 @@
                 </table>
             </div> -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        </div>
+        <div id="predictions" class="container mt-4" style="display: none;">
+            <h2 class="mb-2">Readmission Risk Predictions</h2>
+            <p class="text-muted">Identify patients at risk of hospital readmission</p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Time Period</label>
+                    <select class="form-select" id="prediction-time-filter">
+                        <option selected>All Time</option>
+                        <option>Last Year</option>
+                        <option>Last 6 Months</option>
+                        <option>Last 30 Days</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card p-3 text-center">
+                        <h5>Risk Distribution</h5>
+                        <div style="height: 250px;">
+                            <canvas id="risk-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card p-3 text-center">
+                        <h5>Top Risk Factors</h5>
+                        <div style="height: 250px;">
+                            <canvas id="risk-factors-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-3 mt-4">
+                <h5>High Risk Patients</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Age</th>
+                                <th>Risk Score</th>
+                                <th>Risk Factors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="high-risk-patients-table">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card p-3 mt-4">
+                <h5>Medium Risk Patients</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Age</th>
+                                <th>Risk Score</th>
+                                <th>Risk Factors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medium-risk-patients-table">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 const vacCtx = document.getElementById('vaccinationChart').getContext('2d');
@@ -396,7 +473,7 @@
                         responsive: true
                     }
                 });
-        
+
                 const condCtx = document.getElementById('conditionsChart').getContext('2d');
                 new Chart(condCtx, {
                     type: 'line',
@@ -414,8 +491,8 @@
                     }
                 });
             });
-        </script> 
-        </div> 
+        </script>
+        </div>
         {% endif %}
     </body>
 </html>

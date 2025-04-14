@@ -3,7 +3,8 @@ document.addEventListener("DOMContentLoaded", function () {
         "Dashboard": document.getElementById("dashboard"),
         "Demographics": document.getElementById("demographics"),
         "Treatments & Medications": document.getElementById("treatments"),
-        "Public Health Trends": document.getElementById("trends")
+        "Public Health Trends": document.getElementById("trends"),
+        "Readmission Predictions": document.getElementById("predictions")
     };
 
     // console.log(document.getElementById("treatments"));
@@ -30,7 +31,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("medication-filter").addEventListener("change", loadTreatments);
 
     document.getElementById("trends-time-filter").addEventListener("change", loadTrends);
-    document.getElementById("medication-filter").addEventListener("change", loadTrends);
+    document.getElementById("regions-filter").addEventListener("change", loadTrends);
+    document.getElementById("prediction-time-filter").addEventListener("change", loadPredictions);
 
     showSection("Dashboard");
 
@@ -41,7 +43,143 @@ document.addEventListener("DOMContentLoaded", function () {
     loadMedicationsFilter();
     loadTrends();
     loadRegionsFilter();
+    loadPredictions();
 });
+
+async function loadPredictions() {
+    try {
+        const timeFilter = document.getElementById("prediction-time-filter").value;
+
+        const response = await fetch(`/api/predictions?time=${timeFilter}`);
+        const data = await response.json();
+
+        // Update risk distribution chart
+        updateRiskDistributionChart(data.risk_distribution);
+
+        // Update risk factors chart
+        updateRiskFactorsChart(data.top_risk_factors);
+
+        // Update high risk patients table
+        const highRiskTable = document.getElementById("high-risk-patients-table");
+        highRiskTable.innerHTML = "";
+
+        data.high_risk_patients.forEach(patient => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${patient.name}</td>
+                <td>${patient.age}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1" style="height: 6px;">
+                            <div class="progress-bar bg-danger" style="width: ${patient.risk_score}%;"></div>
+                        </div>
+                        <span class="ms-2">${patient.risk_score}</span>
+                    </div>
+                </td>
+                <td>${patient.risk_factors.join(", ")}</td>
+            `;
+            highRiskTable.appendChild(row);
+        });
+
+        // Update medium risk patients table
+        const mediumRiskTable = document.getElementById("medium-risk-patients-table");
+        mediumRiskTable.innerHTML = "";
+
+        data.medium_risk_patients.forEach(patient => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${patient.name}</td>
+                <td>${patient.age}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1" style="height: 6px;">
+                            <div class="progress-bar bg-warning" style="width: ${patient.risk_score}%;"></div>
+                        </div>
+                        <span class="ms-2">${patient.risk_score}</span>
+                    </div>
+                </td>
+                <td>${patient.risk_factors.join(", ")}</td>
+            `;
+            mediumRiskTable.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Error fetching prediction data:", error);
+    }
+}
+
+function updateRiskDistributionChart(riskData) {
+    const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
+
+    // Check if chart already exists and destroy it
+    if (window.riskDistributionChart) {
+        window.riskDistributionChart.destroy();
+    }
+
+    window.riskDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+            datasets: [{
+                data: [riskData.high_risk, riskData.medium_risk, riskData.low_risk],
+                backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            layout: {
+                padding: 10
+            }
+        }
+    });
+}
+
+function updateRiskFactorsChart(factorsData) {
+    const ctx = document.getElementById('risk-factors-chart').getContext('2d');
+
+    // Check if chart already exists and destroy it
+    if (window.riskFactorsChart) {
+        window.riskFactorsChart.destroy();
+    }
+
+    const labels = Object.keys(factorsData);
+    const data = Object.values(factorsData);
+
+    window.riskFactorsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Patients',
+                data: data,
+                backgroundColor: '#4e73df',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            layout: {
+                padding: 10
+            }
+        }
+    });
+}
 
 async function loadConditionsFilter() {
     try {
