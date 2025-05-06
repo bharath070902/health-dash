@@ -6,6 +6,10 @@
 
 **Video Presentation :** [Link](https://youtu.be/o9s_GNTg4iA)
 
+**Project Charter :** [Link](https://github.com/bharath070902/health-dash/wiki/Project-Charter)
+
+**Decision Matrix :** [Link](https://github.com/bharath070902/health-dash/wiki/Decision-Matrix)
+
 ## Features
 - Dashboard overview with key clinic stats
 - Patient demographic filters and charts
