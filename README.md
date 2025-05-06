@@ -2,7 +2,7 @@
 
 **HealthDash** is a web-based dashboard that helps healthcare professionals analyze patient data, treatment trends, and public health metrics using synthetic EHR data from Synthea. It includes modules for demographic analysis, medication tracking, immunization trends, and readmission risk prediction.
 
-🔗 **Live Demo (if deployed):** [Link](https://healthdash-67838979048.us-central1.run.app/)  
+🔗 **Live Demo :** [Link](https://healthdash-67838979048.us-central1.run.app/)  
 
 ## Features
 - Dashboard overview with key clinic stats
